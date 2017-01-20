@@ -6,11 +6,11 @@ IMAGE=brachos.img
 
 all: $(IMAGE)
 
-%.img: %.nasm
+%.img: %.asm
 	${ASM} -f bin -o $@ $<
 
 run: brachos.img
-	bochs
+	bochs -q
 
 clean:
 	rm $(IMAGE)
