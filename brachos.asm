@@ -114,10 +114,8 @@ command_clear_screen:
 
 
 reboot:
-    ; Send us to end of memory, causing a reboot
-    db 0x0ea
-    dw 0x0000
-    dw 0xffff
+    ; Jump to end of memory, causing a reboot
+    jmp word 0xffff:0000
 
 
 main:
