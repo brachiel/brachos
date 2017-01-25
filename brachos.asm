@@ -26,12 +26,8 @@ jmp fs_main
 
 %define clrf    0x0d, 0x0a
 
-WelcomeMessage db 'Welcome to brachOS. Booting from low level 16 bit...', clrf, clrf, \
-           '    brachos  Copyright (C) 2017  brachiel', clrf, \
-           'This program comes with ABSOLUTELY NO WARRANTY', clrf, \
-           'This is free software, and you are welcome to redistribute it', clrf, \
-           'under certain conditions.', clrf, 0x00
-CommandList db 'Enter a command. r=reboot, p=print hello message, c=clear screen', clrf, '# ', 0x00
+WelcomeMessage db 'Welcome to brachOS. Booting from low level 16 bit...', clrf, clrf, 0x00
+CommandList db 'Enter a command. 2=boot second stage, r=reboot, p=print hello message, c=clear screen', clrf, '# ', 0x00
 
 DriveNumber db 0x00
 
@@ -129,7 +125,7 @@ fs_load_second_stage:
 ; dh  -  head
 ; es:bx - destination
 fs_read_sectors_16:
-    pusha                              ; save all
+;    pusha                              ; save all
     mov si, 0x02                       ; number of tries
 fs_read_sectors_16__top:
     mov ah, 0x02                       ; read sectors from drive
@@ -141,7 +137,7 @@ fs_read_sectors_16__top:
     int 0x13
     jnc fs_read_sectors_16__top
 fs_read_sectors_16__end:
-    popa
+;    popa
     ret
 
 
@@ -181,6 +177,9 @@ fs_main:
     mov ds, ax
     mov es, ax
     mov ss, ax
+
+    mov sp, stack_high ; setting up small stack
+    push 0x03
     sti             ; Enable interrupts
 
     call fs_clear_screen
@@ -194,7 +193,10 @@ fs_main:
 
     call fs_wait_and_handle_command
 
-    times 510 - ($-$$) db 0         ; Fill the rest of the boot loader with 0
+stack_low:
+    times 509 - ($-$$) db 0         ; Fill the rest of the boot loader with 0
+stack_high:
+    db 0
     dw 0xAA55       ; Boot signature
 
 
@@ -202,7 +204,7 @@ fs_main:
 
 jmp ss_main
 
-SecondStageMessage db 'Welcome to the second stage'
+SecondStageMessage db 'Welcome to the second stage', 0x00
 
 ss_main:
     mov si, SecondStageMessage
