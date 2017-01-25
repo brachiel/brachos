@@ -145,8 +145,7 @@ fs_execute_second_stage:
     mov al, 0x01    ; one sector
     mov cx, 0x0002  ; cylinder 0, sector 2
     mov bx, 0x7e00  ; right after bootloader
-;    mov dl, [DriveNumber]
-    mov dl, 0x00
+    mov dl, [DriveNumber]
     xor dh, dh      ; head 0
     call fs_read_sectors_16
     jnc fs_read_second_stage__success
@@ -168,9 +167,7 @@ fs_halt:
 fs_main:
     cli             ; Clear interrupts
 
-;    xor bx, bx
-;    mov bx, DriveNumber
-;    mov byte [bx], dl  ; BIOS stores the device number for us
+    mov byte [DriveNumber], dl  ; BIOS stores the device number for us
 
     ; Setup stack segments
     mov ax, cs
@@ -179,7 +176,6 @@ fs_main:
     mov ss, ax
 
     mov sp, stack_high ; setting up small stack
-    push 0x03
     sti             ; Enable interrupts
 
     call fs_clear_screen
