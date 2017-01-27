@@ -125,7 +125,7 @@ fs_wait_and_handle_command:
 ; dh  -  head
 ; es:bx - destination
 fs_read_sectors_16:
-;    pusha                              ; save all
+    pusha                              ; save all
     mov si, 0x02                       ; number of tries
 .top:
     mov ah, 0x02                       ; read sectors from drive
@@ -137,7 +137,7 @@ fs_read_sectors_16:
     int 0x13
     jnc .top
 .end:
-;    popa
+    popa
     ret
 
 
@@ -176,8 +176,11 @@ fs_main:
     mov es, ax
     mov ss, ax
 
-    mov sp, stack_high ; setting up small stack
-    sti             ; Enable interrupts
+    ; Set up stack just below A000:000
+    mov bp, 0x9000         ; Stack base pointer
+    mov sp, 0xffff         ; Stack pointer
+
+    sti                    ; Enable interrupts
 
     call fs_clear_screen
 
@@ -208,8 +211,5 @@ ss_main:
 
     call fs_reboot
     
-stack_low:
-    times 4095 - ($-$$) db 0         ; Fill the rest of sector 2 with 0
-stack_high:
-    db 0
+    times 512 - ($-$$) db 0         ; Fill the rest of sector 2 with 0
 
