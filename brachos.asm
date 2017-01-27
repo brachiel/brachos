@@ -211,5 +211,5 @@ ss_main:
 
     call fs_reboot
     
-    times 512 - ($-$$) db 0         ; Fill the rest of sector 2 with 0
+    times 1042 - ($-$$) db 0         ; Fill the rest of sector 2 with 0
 
