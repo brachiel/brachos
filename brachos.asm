@@ -1,4 +1,4 @@
-; vim: tabstop=4 sw=4 expandtab :
+; vim: tabstop=4 sw=4 expandtab filetype=nasm :
 ;
 ; (c)  2017  Fisnik Hasani  http://fisnikhasani.com/building-your-own-bootloader/
 ; (c)  2017  brachiel       http://github.com/brachiel
@@ -26,7 +26,7 @@ jmp fs_main
 
 %define clrf    0x0d, 0x0a
 
-WelcomeMessage db 'Welcome to brachOS. Booting from low level 16 bit...', clrf, clrf, 0x00
+WelcomeMessage db 'Welcome to brachOS. Booting from low level 16 bit...', clrf, 0x00
 CommandList db 'Enter a command. 2=boot second stage, r=reboot, p=print hello message, c=clear screen', clrf, '# ', 0x00
 
 DriveNumber db 0x00
@@ -35,11 +35,11 @@ DriveNumber db 0x00
 fs_print:
     lodsb           ; Load string
     or al, al
-    jz fs_print_complete
+    jz .print_complete
     mov ah, 0x0e
     int 0x10        ; BIOS interrupt 10 - Print character to screen via video memory
     jmp fs_print
-fs_print_complete:
+.print_complete:
     ret
 
 
@@ -91,27 +91,27 @@ fs_wait_and_handle_command:
     call fs_wait_for_keypress
 
     cmp al, 'r'
-    je fs_command_reboot
+    je .command_reboot
     cmp al, 'p'
-    je fs_command_print_hello
+    je .command_print_hello
     cmp al, 'c'
-    je fs_command_clear_screen
+    je .command_clear_screen
     cmp al, '2'
-    je fs_load_second_stage
+    je .command_load_second_stage
     call fs_print_newline
     jmp fs_wait_and_handle_command     ; not a correct command. Ask again.
-fs_command_reboot:
+.command_reboot:
     call fs_reboot
-fs_command_print_hello:
+.command_print_hello:
     call fs_print_newline
     call fs_print_newline
     mov si, WelcomeMessage
     call fs_print_ln
     jmp fs_wait_and_handle_command
-fs_command_clear_screen:
+.command_clear_screen:
     call fs_clear_screen
     jmp fs_wait_and_handle_command
-fs_load_second_stage:
+.command_load_second_stage:
     call fs_execute_second_stage
     
     
@@ -127,16 +127,16 @@ fs_load_second_stage:
 fs_read_sectors_16:
 ;    pusha                              ; save all
     mov si, 0x02                       ; number of tries
-fs_read_sectors_16__top:
+.top:
     mov ah, 0x02                       ; read sectors from drive
     int 0x13
-    jnc fs_read_sectors_16__end        ; exit if successful
+    jnc .end                           ; exit if successful
     dec si                             ; decrement remaining steps
-    jc  fs_read_sectors_16__end        ; exit if maximum tries reached
+    jc  .end                           ; exit if maximum tries reached
     xor ah, ah                         ; reset disk system
     int 0x13
-    jnc fs_read_sectors_16__top
-fs_read_sectors_16__end:
+    jnc .top
+.end:
 ;    popa
     ret
 
@@ -148,9 +148,9 @@ fs_execute_second_stage:
     mov dl, [DriveNumber]
     xor dh, dh      ; head 0
     call fs_read_sectors_16
-    jnc fs_read_second_stage__success
+    jnc .success
     jmp fs_halt
-fs_read_second_stage__success:
+.success:
     jmp 0x7e00      ; successfully read sector 2. Start execution there.
     
 
@@ -167,7 +167,8 @@ fs_halt:
 fs_main:
     cli             ; Clear interrupts
 
-    mov byte [DriveNumber], dl  ; BIOS stores the device number for us
+    mov byte [DriveNumber], dl
+    xor bx, bx
 
     ; Setup stack segments
     mov ax, cs
@@ -189,10 +190,7 @@ fs_main:
 
     call fs_wait_and_handle_command
 
-stack_low:
-    times 509 - ($-$$) db 0         ; Fill the rest of the boot loader with 0
-stack_high:
-    db 0
+    times 510 - ($-$$) db 0         ; Fill the rest of the boot loader with 0
     dw 0xAA55       ; Boot signature
 
 
@@ -210,4 +208,8 @@ ss_main:
 
     call fs_reboot
     
-    times 1024 - ($-$$) db 0         ; Fill the rest of sector 2 with 0
+stack_low:
+    times 4095 - ($-$$) db 0         ; Fill the rest of sector 2 with 0
+stack_high:
+    db 0
+
